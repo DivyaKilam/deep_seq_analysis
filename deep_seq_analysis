@@ -1,0 +1,53 @@
+##Login to SRA NCBI and go to SRA documentation
+##download and install SRA toolkit 
+
+./fastq-dump -I --split-files DRP000812
+//This step gives two fastq files containing ".1" and ".2" read suffices for paired-end data.
+
+##Trim paired-end reads
+./trim -1 DRP000812_1.fastq -2 DRP000812_2.fastq -P B_subtilis -q 20
+
+//This program trims low-quality bases from each end of a read. 
+//Trim bases whose base quality scores are lower than 20 are trimmed from the ends of reads.
+
+##Alignment 
+##index the reference sequence
+bowtie2-build -f GCF_000009045.1_ASM904v1_genomic.fna bsubtilis
+bowtie2 -x bsubtilis -l 20 -p 4 -1 B_subtilis_pair1.fastq -2 B_subtilis_pair2.fastq -S bs_eg.sam
+
+//seed length: 20
+//hits written in sam file format
+//-p launch number of threads, that will run on separate processors
+
+##Sort output file
+samtools view -bS -o bsubtilis_pair.bam bs_pair.sam
+samtools view bsubtilis_pair.bam | head
+samtools sort -o bsubtilis_pair.sorted.bam bsubtilis_pair.bam 
+samtools flagstat bsubtilis_pair.sorted.bam
+samtools index bsubtilis_pair.sorted.bam
+##visualize mapped reads to reference sequence
+samtools tview bsubtilis_pair.sorted.bam GCF_000009045.1_ASM904v1_genomic.fna
+
+##Summaries of assembly based on reference mapping
+i) Contig N50 and N90
+samtools fasta bsubtilis_pair.sorted.bam > bsubtilis_pair.fa
+perl N50_calc.pl bsubtilis_pair.fa
+
+ii) Percentage coverage
+samtools mpileup bsubtilis_pair.sorted.bam | awk '$4>0' | wc -l
+bowtie2-inspect -s bsubtilis | awk '{ FS = "\t"}; BEGIN{L=0}; {L=L+$3}; END{print L}'
+
+iii) Average depth
+samtools mpileup bsubtilis_pair.sorted.bam | awk '{sum += $4} END { if(NR>0) print sum/NR}'
+
+iv) SNPs/Indels
+samtools mpileup -uf GCF_000009045.1_ASM904v1_genomic.fna bsubtilis_pair.sorted.bam | bcftools call -mv > var.raw.vcf
+bcftools filter --exclude 'QUAL<20 || DP>100' var.raw.vcf > var.vcf
+awk '! /\#/' var.vcf | awk '{if(length($4)==1 && length($5)==1)print}' | wc -l
+awk '! /\#/' var.vcf | awk '{if(length($4)>1 && length($5)>1)print}' | wc -l
+
+##de novo assembly
+velveth dnovo_bsubtilis 21 -fastq -shortPaired B_subtilis_pair1.fastq B_subtilis_pair2.fastq
+velvetg dnovo_bsubtilis/ -ins_length 500 -exp_cov 21
+grep -c ">" contigs.fa
+perl N50_calc.pl contigs.fa
