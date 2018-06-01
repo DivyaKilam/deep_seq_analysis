@@ -29,18 +29,18 @@ samtools index bsubtilis_pair.sorted.bam
 samtools tview bsubtilis_pair.sorted.bam GCF_000009045.1_ASM904v1_genomic.fna
 
 ##Summaries of assembly based on reference mapping
-i) Contig N50 and N90
+# Contig N50 and N90
 samtools fasta bsubtilis_pair.sorted.bam > bsubtilis_pair.fa
 perl N50_calc.pl bsubtilis_pair.fa
 
-ii) Percentage coverage
+## Percentage coverage
 samtools mpileup bsubtilis_pair.sorted.bam | awk '$4>0' | wc -l
 bowtie2-inspect -s bsubtilis | awk '{ FS = "\t"}; BEGIN{L=0}; {L=L+$3}; END{print L}'
 
-iii) Average depth
+### Average depth
 samtools mpileup bsubtilis_pair.sorted.bam | awk '{sum += $4} END { if(NR>0) print sum/NR}'
 
-iv) SNPs/Indels
+#### SNPs/Indels
 samtools mpileup -uf GCF_000009045.1_ASM904v1_genomic.fna bsubtilis_pair.sorted.bam | bcftools call -mv > var.raw.vcf
 bcftools filter --exclude 'QUAL<20 || DP>100' var.raw.vcf > var.vcf
 awk '! /\#/' var.vcf | awk '{if(length($4)==1 && length($5)==1)print}' | wc -l
