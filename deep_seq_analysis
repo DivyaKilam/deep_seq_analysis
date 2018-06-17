@@ -1,3 +1,5 @@
+##The project involves deep sequence analysis of WGS of Bacillus subtilis Miyagi-4100, rifampicin-resistant natto-fermenting strain. The ‘DRP000812’ dataset was selected from NCBI’s SRA database. The reads have a genomic source, paired layout, insert size of 500 bp and have been sequenced on the Illumina platform. The project uses reference based alignment as well as de novo assembly and summarizes the resuls.
+ 
 ##Login to SRA NCBI and go to SRA documentation
 ##download and install SRA toolkit 
 
@@ -8,7 +10,7 @@
 ./trim -1 DRP000812_1.fastq -2 DRP000812_2.fastq -P B_subtilis -q 20
 
 //This program trims low-quality bases from each end of a read. 
-//Trim bases whose base quality scores are lower than 20 are trimmed from the ends of reads.
+//Trim bases whose base quality scores are lower than 20. Bases are trimmed from the ends of reads.
 
 ##Alignment 
 ##index the reference sequence
